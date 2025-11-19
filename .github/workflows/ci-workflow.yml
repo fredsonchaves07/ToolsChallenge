@@ -220,7 +220,7 @@ jobs:
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: fredsonchaves07/tools-challenge:ci
+          tags: fredsonchaves07/tools-challenge-pagamentos-api:ci
 
       - name: Up Containers
         run: docker compose -f compose.ci.yml up -d --wait-timeout 10
@@ -241,14 +241,14 @@ jobs:
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=maxa
-          tags: fredsonchaves07/tools-challenge:${{ steps.git_commit.outputs.COMMIT }}
+          tags: fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.git_commit.outputs.COMMIT }}
 
       - name: Analyse for critical and high CVEs
         id: docker-scoute-cves
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: fredsonchaves07/tools-challenge:${{ steps.git_commit.outputs.COMMIT }}
+          image: fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.git_commit.outputs.COMMIT }}
           only-severities: critical,high
           only-fixed: true
           exit-code: true
@@ -258,7 +258,7 @@ jobs:
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: fredsonchaves07/tools-challenge:${{ steps.git_commit.outputs.COMMIT }}
+          image: fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.git_commit.outputs.COMMIT }}
 
       - name: Stop job execution timer
         if: always()
@@ -400,6 +400,6 @@ jobs:
 
             ### 🧰 Vulnerability Scan
             - Critical/High: ${{ steps.docker-scoute-cves.outcome == 'success' && '🟢 Clean' || (steps.docker-scoute-cves.outcome == 'failure' && '⚠️ Detected' || 'ℹ️ Unknown') }}
-            - Image: `fredsonchaves07/tools-challenge:${{ steps.git_commit.outputs.COMMIT || github.sha }}`
+            - Image: `fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.git_commit.outputs.COMMIT || github.sha }}`
 
             _Generated automatically by CI pipeline on ${{ steps.gen_summary.outputs.summary_date || env.CURRENT_DATE }}_
