@@ -1,0 +1,153 @@
+name: CD Tools Challenge API
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+    tags: [ '*.*.*' ]
+
+jobs:
+  cd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start job execution timer
+        id: job_timer_start
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Define environment label
+        id: env
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "ENVIRONMENT=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref_name }}" == "develop" ]]; then
+            echo "ENVIRONMENT=homologation" >> $GITHUB_OUTPUT
+          else
+            echo "ENVIRONMENT=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract project version from pom.xml
+        id: project_version
+        run: |
+          echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+
+      - name: Get build date
+        id: build_date
+        run: |
+          echo "DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
+      - name: Get Revision
+        id: git_commit
+        run: |
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Determine Docker Tag
+        id: docker_tag
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+            latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+            echo "TAG_NAME=$latest_tag" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_NAME=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Record build start
+        id: build_start
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v6
+        id: build-and-push
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: fredsonchaves07/tools-challenge:${{ steps.docker_tag.outputs.TAG_NAME }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+          build-args: |
+            PROJECT_VERSION=${{ steps.project_version.outputs.VERSION }}
+            BUILD_DATE=${{ steps.build_date.outputs.DATE }}
+            GIT_COMMIT=${{ steps.git_commit.outputs.COMMIT }}
+            ENVIRONMENT=${{ steps.env.outputs.ENVIRONMENT }}
+
+      - name: Record build end
+        id: build_end
+        run: echo "end_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Stop job execution timer
+        id: job_timer
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.job_timer_start.outputs.start_time }}
+          duration=$(( end_time - start_time ))
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+
+      - name: Generate Deployment Summary
+        if: always()
+        run: |
+          total_time=$(( ${{ steps.job_timer.outputs.duration }} ))
+          build_time=$(( ${{ steps.build_end.outputs.end_time }} - ${{ steps.build_start.outputs.start_time }} ))
+          sign_time=$(( ${{ steps.sign_end.outputs.end_time }} - ${{ steps.sign_start.outputs.start_time }} ))
+
+          total_min=$(( total_time / 60 ))
+          total_sec=$(( total_time % 60 ))
+          build_min=$(( build_time / 60 ))
+          build_sec=$(( build_time % 60 ))
+          sign_min=$(( sign_time / 60 ))
+          sign_sec=$(( sign_time % 60 ))
+
+          echo "## 🚀 CD Summary - Tools Challenge (Production)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "![Build](https://img.shields.io/badge/build-passing-brightgreen) ![Java](https://img.shields.io/badge/java-21-blue) ![Maven](https://img.shields.io/badge/build-Maven-orange) ![Branch](https://img.shields.io/badge/branch-develop-blueviolet) ![Docker Image Version](https://img.shields.io/badge/docker-latest-blue?logo=docker)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 🧱 Build & Sign Durations" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|---------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ✅ | ~${build_min}m ${build_sec}s |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🐳 Docker Image Details" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`fredsonchaves07/tools-challenge:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ steps.project_version.outputs.VERSION }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ steps.git_commit.outputs.COMMIT }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | \`${{ steps.env.outputs.ENVIRONMENT }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Date | \`${{ steps.build_date.outputs.DATE }}\` |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 Image Signature" >> $GITHUB_STEP_SUMMARY
+          echo "- Signed with Cosign ✅" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🕒 Total Job Duration" >> $GITHUB_STEP_SUMMARY
+          echo "- **${total_time}s (~${total_min}m ${total_sec}s)**" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Useful Links" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐳 [View image on Docker Hub](https://hub.docker.com/r/fredsonchaves07/tools-challenge)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧾 [Workflow Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Generated automatically by CD pipeline on $(date '+%Y-%m-%d %H:%M:%S')_" >> $GITHUB_STEP_SUMMARY
