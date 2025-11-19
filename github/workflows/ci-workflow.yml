@@ -2,7 +2,7 @@ name: CI Tools Challenge API
 
 on:
   pull_request:
-    branches: [ "develop", "main" ]
+    branches: [ "developer", "main" ]
 
 jobs:
   ci:

@@ -2,7 +2,7 @@ name: CD Tools Challenge API
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "developer" ]
     tags: [ '*.*.*' ]
 
 jobs:
