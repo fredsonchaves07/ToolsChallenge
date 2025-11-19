@@ -79,7 +79,7 @@ jobs:
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: fredsonchaves07/tools-challenge:${{ steps.docker_tag.outputs.TAG_NAME }}
+          tags: fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.docker_tag.outputs.TAG_NAME }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: mode=max
@@ -130,7 +130,7 @@ jobs:
           echo "### 🐳 Docker Image Details" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | \`fredsonchaves07/tools-challenge:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`fredsonchaves07/tools-challenge-pagamentos-api:latest\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Version | \`${{ steps.project_version.outputs.VERSION }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | \`${{ steps.git_commit.outputs.COMMIT }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Environment | \`${{ steps.env.outputs.ENVIRONMENT }}\` |" >> $GITHUB_STEP_SUMMARY
@@ -146,7 +146,7 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Useful Links" >> $GITHUB_STEP_SUMMARY
-          echo "- 🐳 [View image on Docker Hub](https://hub.docker.com/r/fredsonchaves07/tools-challenge)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐳 [View image on Docker Hub](https://hub.docker.com/r/fredsonchaves07/tools-challenge-pagamentos-api)" >> $GITHUB_STEP_SUMMARY
           echo "- 🧾 [Workflow Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
