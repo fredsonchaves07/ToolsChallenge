@@ -1,0 +1,65 @@
+services:
+  api-ci:
+    image: fredsonchaves07/tools-challenge-pagamentos-api:ci
+    container_name: tools-challenge-pagamentos-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ci
+    environment:
+      COMPOSE_REMOVE_ORPHANS: true
+      COMPOSE_BAKE: true
+      COMPOSE_FILE: compose.ci
+      DB_USERNAME: user
+      DB_PASSWORD: password
+      DB_URL: database-ci
+      DB_NAME: CHALLENGEDB
+      DB_PORT: 5432
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080 || exit 1" ]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      database-ci:
+        condition: service_healthy
+
+  database-ci:
+    image: postgres:17
+    container_name: tools-challenge-pagamentos-database
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: [ "CMD-SHELL", "sh -c 'pg_isready -U user -d password'" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./docker/init:/docker-entrypoint-initdb.d
