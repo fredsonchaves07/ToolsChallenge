@@ -7,6 +7,7 @@ import tools.challenge.domain.pagamentos.shared.descricaooperacao.valueobject.De
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,7 +17,7 @@ public class DescricaoOperacaoTest {
     @Test
     void deveSerPossivelCriarUmaDescricaoDeOperacao() {
         final BigDecimal valor = BigDecimal.valueOf(500.50);
-        final LocalDateTime dataHora = LocalDateTime.now();
+        final LocalDateTime dataHora = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         final String estabelecimento = "PetShop Mundo Cão";
         final String dataHoraFormatada = dataHora.format(DateTimeFormatter
                 .ofPattern("dd/MM/yyyy hh:mm:ss", Locale.of("pt-BR")));
@@ -32,7 +33,7 @@ public class DescricaoOperacaoTest {
     void naoDeveSerPossivelCadastrarUmaDescricaoDeOperacaoComNomeNull() {
         final String mensagemDeErroEsperada = "Descrição de operação deve possuir um nome de até 255 caracteres.";
         final BigDecimal valor = BigDecimal.valueOf(500.50);
-        final LocalDateTime dataHora = LocalDateTime.now();
+        final LocalDateTime dataHora = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         final String typeError = DescricaoOperacaoError.typeError();
         final DescricaoOperacaoError descricaoOperacaoError = assertThrows(
                 DescricaoOperacaoError.class,
