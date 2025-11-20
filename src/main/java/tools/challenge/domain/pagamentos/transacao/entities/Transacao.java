@@ -21,7 +21,7 @@ public class Transacao extends Entity<TransacaoID> {
 
     private final TipoTransacao tipo;
 
-    public Transacao(final DescricaoOperacaoTransacao descricaoOperacao, final CartaoDeCredito cartaoDeCredito,
+    private Transacao(final DescricaoOperacaoTransacao descricaoOperacao, final CartaoDeCredito cartaoDeCredito,
                      final FormaDePagamento formaDePagamento, final TipoTransacao tipo) {
         super(TransacaoID.of());
         this.descricaoOperacao = descricaoOperacao;
@@ -30,7 +30,7 @@ public class Transacao extends Entity<TransacaoID> {
         this.tipo = tipo;
     }
 
-    public Transacao(final TransacaoID id, final LocalDateTime createdAt, final LocalDateTime updatedAt,
+    private Transacao(final TransacaoID id, final LocalDateTime createdAt, final LocalDateTime updatedAt,
                      final DescricaoOperacaoTransacao descricaoOperacao, final CartaoDeCredito cartaoDeCredito,
                      final FormaDePagamento formaDePagamento, final TipoTransacao tipo) {
         super(id, createdAt, updatedAt);
