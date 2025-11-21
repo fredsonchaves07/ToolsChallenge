@@ -1,4 +1,4 @@
-package tools.challenge.domain.pagamentos.transacao.usecases.pagamento;
+package tools.challenge.domain.pagamentos.transacao.usecases.estorno;
 
 import tools.challenge.core.either.Either;
 import tools.challenge.core.error.Error;
@@ -9,21 +9,21 @@ import tools.challenge.domain.pagamentos.transacao.repository.TransacaoRepositor
 import tools.challenge.domain.pagamentos.transacao.usecases.input.TransacaoInput;
 import tools.challenge.domain.pagamentos.transacao.usecases.output.TransacaoOutput;
 
-public class RealizarPagamentoUseCase implements UseCase<TransacaoInput, TransacaoOutput> {
+public class RealizarEstornoUseCase implements UseCase<TransacaoInput, TransacaoOutput> {
 
     private TransacaoRepository repository;
 
-    public RealizarPagamentoUseCase(final TransacaoRepository transacaoRepository) {
+    public RealizarEstornoUseCase(final TransacaoRepository transacaoRepository) {
         this.repository = transacaoRepository;
     }
 
     @Override
     public Either<Error, TransacaoOutput> execute(final TransacaoInput input) {
-        return Either.attempt(() -> criaPagamento(input));
+        return Either.attempt(() -> criaEstorno(input));
     }
 
-    private TransacaoOutput criaPagamento(final TransacaoInput input) {
-        final Transacao transacao = Transacao.criaTransacaoDePagamento(
+    private TransacaoOutput criaEstorno(final TransacaoInput input) {
+        final Transacao transacao = Transacao.criaTransacaoDeEstorno(
                 input.descricaoOperacao().toAggregate(),
                 CartaoDeCredito.criaCartaoDeCredito(input.numeroCartao()),
                 input.formaPagamento().toAggregate());

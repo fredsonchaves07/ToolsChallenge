@@ -1,4 +1,4 @@
-package tools.challenge.domain.pagamentos.transacao.usecases.pagamento;
+package tools.challenge.domain.pagamentos.transacao.usecases.input;
 
 import tools.challenge.core.usecases.ValueInput;
 

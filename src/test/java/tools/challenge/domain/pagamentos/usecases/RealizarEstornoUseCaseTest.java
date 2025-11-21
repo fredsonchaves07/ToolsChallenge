@@ -10,11 +10,11 @@ import tools.challenge.domain.pagamentos.shared.descricaooperacao.error.Descrica
 import tools.challenge.domain.pagamentos.shared.formadepagamento.error.FormaDePagamentoError;
 import tools.challenge.domain.pagamentos.transacao.entities.TransacaoStatus;
 import tools.challenge.domain.pagamentos.transacao.repository.TransacaoRepository;
+import tools.challenge.domain.pagamentos.transacao.usecases.estorno.RealizarEstornoUseCase;
 import tools.challenge.domain.pagamentos.transacao.usecases.input.DescricaoOperacaoTransacaoInput;
 import tools.challenge.domain.pagamentos.transacao.usecases.input.FormaDePagamentoInput;
 import tools.challenge.domain.pagamentos.transacao.usecases.input.TransacaoInput;
 import tools.challenge.domain.pagamentos.transacao.usecases.output.TransacaoOutput;
-import tools.challenge.domain.pagamentos.transacao.usecases.pagamento.RealizarPagamentoUseCase;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,16 +25,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import static tools.challenge.factories.ObjectFactoryTest.criaCartaoDeCredito;
 
 @QuarkusTest
-public class RealizarPagamentoUseCaseTest {
+public class RealizarEstornoUseCaseTest {
 
     @Inject
     TransacaoRepository repository;
 
     @Inject
-    RealizarPagamentoUseCase useCase;
+    RealizarEstornoUseCase useCase;
 
     @Test
-    void deveSerPossivelRealizarPagamento() {
+    void deveSerPossivelRealizarEstorno() {
         final String estabelecimento = "PetShop Mundo Cão";
         final LocalDateTime dataHora = LocalDateTime.now();
         final String dataHoraFormatada = dataHora.format(DateTimeFormatter
@@ -57,13 +57,13 @@ public class RealizarPagamentoUseCaseTest {
         assertEquals(valor, output.getSuccess().descricaoOperacao().valor());
         assertEquals(dataHoraFormatada, output.getSuccess().descricaoOperacao().dataHora());
         assertEquals(estabelecimento, output.getSuccess().descricaoOperacao().estabelecimento());
-        assertEquals(TransacaoStatus.AUTORIZADO.toString(), output.getSuccess().descricaoOperacao().status());
+        assertEquals(TransacaoStatus.NEGADO.toString(), output.getSuccess().descricaoOperacao().status());
         assertEquals(tipoFormaPagamento, output.getSuccess().formaPagamento().tipo());
         assertEquals(parcelas, output.getSuccess().formaPagamento().parcelas());
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComEstabelecimentoNull() {
+    void deveSerPossivelRealizarEstornoComEstabelecimentoNull() {
         final String mensagemErroEsperada = "Descrição de operação deve possuir um nome de até 255 caracteres.";
         final String typeError = DescricaoOperacaoError.typeError();
         final LocalDateTime dataHora = LocalDateTime.now();
@@ -85,7 +85,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComEstabelecimentoVazio() {
+    void deveSerPossivelRealizarEstornoComEstabelecimentoVazio() {
         final String mensagemErroEsperada = "Descrição de operação deve possuir um nome de até 255 caracteres.";
         final String typeError = DescricaoOperacaoError.typeError();
         final LocalDateTime dataHora = LocalDateTime.now();
@@ -107,7 +107,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComEstabelecimentoComNomeMaisQue255Caracteres() {
+    void deveSerPossivelRealizarEstornoComEstabelecimentoComNomeMaisQue255Caracteres() {
         final String mensagemErroEsperada = "Descrição de operação deve possuir um nome de até 255 caracteres.";
         final String typeError = DescricaoOperacaoError.typeError();
         final String estabelecimento = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +
@@ -137,7 +137,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComValorNull() {
+    void deveSerPossivelRealizarEstornoComValorNull() {
         final String mensagemErroEsperada = "Descrição de operação deve possuir um valor válido.";
         final String typeError = DescricaoOperacaoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -159,7 +159,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComDataHoraNull() {
+    void deveSerPossivelRealizarEstornoComDataHoraNull() {
         final String mensagemErroEsperada = "Descrição de operação deve possuir uma data e hora válida.";
         final String typeError = DescricaoOperacaoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -181,7 +181,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComFormaDePagamentoNull() {
+    void deveSerPossivelRealizarEstornoComFormaDePagamentoNull() {
         final String mensagemErroEsperada = "Tipo de forma de pagamento deve ser AVISTA, PARCELADO LOJA ou PARCELADO EMISSOR.";
         final String typeError = FormaDePagamentoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -203,7 +203,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComFormaDePagamentoVazio() {
+    void deveSerPossivelRealizarEstornoComFormaDePagamentoVazio() {
         final String mensagemErroEsperada = "Tipo de forma de pagamento deve ser AVISTA, PARCELADO LOJA ou PARCELADO EMISSOR.";
         final String typeError = FormaDePagamentoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -225,7 +225,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComFormaDePagamentoComValorNaoMapeado() {
+    void deveSerPossivelRealizarEstornoComFormaDePagamentoComValorNaoMapeado() {
         final String mensagemErroEsperada = "Tipo de forma de pagamento deve ser AVISTA, PARCELADO LOJA ou PARCELADO EMISSOR.";
         final String typeError = FormaDePagamentoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -247,7 +247,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComFormaDePagamentoComParcelaMenorQue0() {
+    void deveSerPossivelRealizarEstornoComFormaDePagamentoComParcelaMenorQue0() {
         final String mensagemErroEsperada = "Forma de pagamento deve possuir quantidade de parcelas maior que 0.";
         final String typeError = FormaDePagamentoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -269,7 +269,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComFormaDePagamentoComParcelaComValor0() {
+    void deveSerPossivelRealizarEstornoComFormaDePagamentoComParcelaComValor0() {
         final String mensagemErroEsperada = "Forma de pagamento deve possuir quantidade de parcelas maior que 0.";
         final String typeError = FormaDePagamentoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -291,7 +291,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComCartaoDeCreditoNull() {
+    void deveSerPossivelRealizarEstornoComCartaoDeCreditoNull() {
         final String mensagemErroEsperada = "Cartão de crédito deve possuir um número de 16 dígitos.";
         final String typeError = CartaoDeCreditoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -313,7 +313,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComCartaoDeCreditoComValorVazio() {
+    void deveSerPossivelRealizarEstornoComCartaoDeCreditoComValorVazio() {
         final String mensagemErroEsperada = "Cartão de crédito deve possuir um número de 16 dígitos.";
         final String typeError = CartaoDeCreditoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -335,7 +335,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComCartaoDeCreditoComValorMenorQue16Digitos() {
+    void deveSerPossivelRealizarEstornoComCartaoDeCreditoComValorMenorQue16Digitos() {
         final String mensagemErroEsperada = "Cartão de crédito deve possuir um número de 16 dígitos.";
         final String typeError = CartaoDeCreditoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -357,7 +357,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComCartaoDeCreditoComValorMaiorQue16Digitos() {
+    void deveSerPossivelRealizarEstornoComCartaoDeCreditoComValorMaiorQue16Digitos() {
         final String mensagemErroEsperada = "Cartão de crédito deve possuir um número de 16 dígitos.";
         final String typeError = CartaoDeCreditoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";
@@ -379,7 +379,7 @@ public class RealizarPagamentoUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelRealizarPagamentoComCartaoDeCreditoComValorQualquer() {
+    void deveSerPossivelRealizarEstornoComCartaoDeCreditoComValorQualquer() {
         final String mensagemErroEsperada = "Cartão de crédito deve possuir um número de 16 dígitos.";
         final String typeError = CartaoDeCreditoError.typeError();
         final String estabelecimento = "PetShop Mundo Cão";

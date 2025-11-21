@@ -7,20 +7,20 @@ import org.junit.jupiter.api.Test;
 import tools.challenge.core.either.Either;
 import tools.challenge.core.error.Error;
 import tools.challenge.domain.pagamentos.transacao.repository.TransacaoRepository;
+import tools.challenge.domain.pagamentos.transacao.usecases.estorno.BuscarTodosEstornosUseCase;
 import tools.challenge.domain.pagamentos.transacao.usecases.output.ListTransacaoOutput;
-import tools.challenge.domain.pagamentos.transacao.usecases.pagamento.BuscarTodosPagamentosUseCase;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static tools.challenge.factories.ObjectFactoryTest.criaTransacaoDePagamento;
+import static tools.challenge.factories.ObjectFactoryTest.criaTransacaoDeEstorno;
 
 @QuarkusTest
-public class BuscarTodosPagamentosUseCaseTest {
+public class BuscarTodosEstornosUseCaseTest {
 
     @Inject
     TransacaoRepository repository;
 
     @Inject
-    BuscarTodosPagamentosUseCase useCase;
+    BuscarTodosEstornosUseCase useCase;
 
     @BeforeEach
     void setUp() {
@@ -28,10 +28,10 @@ public class BuscarTodosPagamentosUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelBuscarTodosPagamentos() {
-        repository.save(criaTransacaoDePagamento());
-        repository.save(criaTransacaoDePagamento());
-        repository.save(criaTransacaoDePagamento());
+    void deveSerPossivelBuscarTodosEstornos() {
+        repository.save(criaTransacaoDeEstorno());
+        repository.save(criaTransacaoDeEstorno());
+        repository.save(criaTransacaoDeEstorno());
         final Either<Error, ListTransacaoOutput> output = useCase.execute();
         assertNotNull(output);
         assertNotNull(output.getSuccess());
@@ -40,7 +40,7 @@ public class BuscarTodosPagamentosUseCaseTest {
     }
 
     @Test
-    void deveSerPossivelBuscarTodosPagamentosVazioSeNaoHouverPagamentos() {
+    void deveSerPossivelBuscarTodosEstornosVazioSeNaoHouverPagamentos() {
         final Either<Error, ListTransacaoOutput> output = useCase.execute();
         assertNotNull(output);
         assertNotNull(output.getSuccess());

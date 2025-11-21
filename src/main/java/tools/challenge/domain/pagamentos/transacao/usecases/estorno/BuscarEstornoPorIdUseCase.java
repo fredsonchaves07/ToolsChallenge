@@ -1,4 +1,4 @@
-package tools.challenge.domain.pagamentos.transacao.usecases.pagamento;
+package tools.challenge.domain.pagamentos.transacao.usecases.estorno;
 
 import tools.challenge.core.either.Either;
 import tools.challenge.core.error.Error;
@@ -12,21 +12,21 @@ import tools.challenge.domain.pagamentos.transacao.usecases.output.TransacaoOutp
 
 import java.util.Optional;
 
-public class BuscarPagamentoPorIdUseCase implements UseCase<TransacaoIdInput, ValueOutput> {
+public class BuscarEstornoPorIdUseCase implements UseCase<TransacaoIdInput, ValueOutput> {
 
     private TransacaoRepository repository;
 
-    public BuscarPagamentoPorIdUseCase(TransacaoRepository repository) {
+    public BuscarEstornoPorIdUseCase(TransacaoRepository repository) {
         this.repository = repository;
     }
 
     @Override
     public Either<Error, ValueOutput> execute(final TransacaoIdInput input) {
-        return Either.attempt(() -> buscaPagamento(input));
+        return Either.attempt(() -> buscarEstorno(input));
     }
 
-    private ValueOutput buscaPagamento(final TransacaoIdInput input) {
-        final Optional<Transacao> transacao = repository.findByIdTransacaoDePagamento(input.toTransacaoId());
+    private ValueOutput buscarEstorno(final TransacaoIdInput input) {
+        final Optional<Transacao> transacao = repository.findByIdTransacaoDeEstorno(input.toTransacaoId());
         if (transacao.isEmpty()) return EmptyValueOutput.create();
         return TransacaoOutput.criaOutput(transacao.get());
     }
