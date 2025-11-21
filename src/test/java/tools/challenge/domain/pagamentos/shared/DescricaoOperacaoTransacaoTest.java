@@ -7,7 +7,7 @@ import tools.challenge.domain.pagamentos.transacao.entities.TransacaoStatus;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static tools.challenge.factories.ObjectValueFactoryTest.criaDescricaoOperacao;
+import static tools.challenge.factories.ObjectFactoryTest.criaDescricaoOperacao;
 
 public class DescricaoOperacaoTransacaoTest {
 

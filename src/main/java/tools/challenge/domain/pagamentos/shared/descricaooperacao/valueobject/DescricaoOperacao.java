@@ -45,4 +45,19 @@ public record DescricaoOperacao(String estabelecimento, BigDecimal valor,
     public String dataHoraFormatada() {
         return dataHora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm:ss", Locale.of("pt-BR")));
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        final DescricaoOperacao that = (DescricaoOperacao) o;
+        return valor.equals(that.valor) && estabelecimento.equals(that.estabelecimento) && dataHora.equals(that.dataHora);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = estabelecimento.hashCode();
+        result = 31 * result + valor.hashCode();
+        result = 31 * result + dataHora.hashCode();
+        return result;
+    }
 }

@@ -5,12 +5,13 @@ import org.junit.jupiter.api.Test;
 import tools.challenge.domain.pagamentos.shared.cartaodecredito.valueobject.CartaoDeCredito;
 import tools.challenge.domain.pagamentos.shared.descricaooperacao.valueobject.DescricaoOperacao;
 import tools.challenge.domain.pagamentos.shared.formadepagamento.valueobject.FormaDePagamento;
+import tools.challenge.domain.pagamentos.transacao.entities.TipoTransacao;
 import tools.challenge.domain.pagamentos.transacao.entities.Transacao;
 import tools.challenge.domain.pagamentos.transacao.entities.TransacaoStatus;
 import tools.challenge.domain.pagamentos.transacao.error.TransacaoError;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static tools.challenge.factories.ObjectValueFactoryTest.*;
+import static tools.challenge.factories.ObjectFactoryTest.*;
 
 public class TransacaoTest {
 
@@ -32,6 +33,7 @@ public class TransacaoTest {
         assertEquals(descricaoOperacao.valor(), transacao.descricaoOperacao().valor());
         assertEquals(descricaoOperacao.dataHoraFormatada(), transacao.descricaoOperacao().dataHora());
         assertEquals(TransacaoStatus.AUTORIZADO, transacao.descricaoOperacao().status());
+        assertEquals(TipoTransacao.PAGAMENTO, transacao.tipoTransacao());
         assertNotNull(transacao.createdAt());
         assertNotNull(transacao.updatedAt());
     }
@@ -54,6 +56,7 @@ public class TransacaoTest {
         assertEquals(descricaoOperacao.valor(), transacao.descricaoOperacao().valor());
         assertEquals(descricaoOperacao.dataHoraFormatada(), transacao.descricaoOperacao().dataHora());
         assertEquals(TransacaoStatus.NEGADO, transacao.descricaoOperacao().status());
+        assertEquals(TipoTransacao.ESTORNO, transacao.tipoTransacao());
         assertNotNull(transacao.createdAt());
         assertNotNull(transacao.updatedAt());
     }

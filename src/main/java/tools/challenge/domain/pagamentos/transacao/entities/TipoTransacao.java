@@ -1,14 +1,14 @@
 package tools.challenge.domain.pagamentos.transacao.entities;
 
-public enum TransacaoStatus {
+public enum TipoTransacao {
 
-    AUTORIZADO("AUTORIZADO"),
+    PAGAMENTO("PAGAMENTO"),
 
-    NEGADO("NEGADO");
+    ESTORNO("ESTORNO");
 
     private final String tipo;
 
-    TransacaoStatus(final String tipo) {
+    TipoTransacao(final String tipo) {
         this.tipo = tipo;
     }
 }
