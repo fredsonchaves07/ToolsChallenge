@@ -26,6 +26,6 @@ public class RealizarPagamentoUseCase implements UseCase<TransacaoInput, Transac
                 CartaoDeCredito.criaCartaoDeCredito(input.numeroCartao()),
                 input.formaPagamento().toAggregate());
         repository.save(transacao);
-        return TransacaoOutput.criaInput(transacao);
+        return TransacaoOutput.criaOutput(transacao);
     }
 }

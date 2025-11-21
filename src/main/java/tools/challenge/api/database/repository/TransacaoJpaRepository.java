@@ -23,11 +23,39 @@ public class TransacaoJpaRepository implements TransacaoRepository {
     }
 
     @Override
+    public Optional<Transacao> findByIdTransacaoDePagamento(final TransacaoID id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        final Optional<TransacaoJpa> transacaoJpa = (TransacaoJpa.find(
+                        "tipoTransacao = ?1 and id =?2", TipoTransacao.PAGAMENTO.toString(), id.toString())
+                .firstResultOptional()
+                .stream()
+                .map(transacao -> (TransacaoJpa) transacao))
+                .findFirst();
+        return transacaoJpa.map(TransacaoJpa::toAggregate);
+    }
+
+    @Override
     public List<Transacao> transacoesEstorno() {
         final List<TransacaoJpa> transacaoJpaList = TransacaoJpa
                 .find("tipoTransacao = ?1", TipoTransacao.ESTORNO.toString())
                 .list();
         return transacaoJpaList.stream().map(TransacaoJpa::toAggregate).toList();
+    }
+
+    @Override
+    public Optional<Transacao> findByIdTransacaoDeEstorno(final TransacaoID id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        final Optional<TransacaoJpa> transacaoJpa = (TransacaoJpa.find(
+                        "tipoTransacao = ?1 and id =?2", TipoTransacao.ESTORNO.toString(), id.toString())
+                .firstResultOptional()
+                .stream()
+                .map(transacao -> (TransacaoJpa) transacao))
+                .findFirst();
+        return transacaoJpa.map(TransacaoJpa::toAggregate);
     }
 
     @Override

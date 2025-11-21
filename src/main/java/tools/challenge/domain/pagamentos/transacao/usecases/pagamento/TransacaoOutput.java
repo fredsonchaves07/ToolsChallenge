@@ -9,7 +9,7 @@ public record TransacaoOutput(
         DescricaoOperacaoTransacaoOutput descricaoOperacao,
         FormaDePagamentoOutput formaPagamento) implements ValueOutput {
 
-    public static TransacaoOutput criaInput(final Transacao transacao) {
+    public static TransacaoOutput criaOutput(final Transacao transacao) {
         final FormaDePagamentoOutput formaDePagamentoOutput = FormaDePagamentoOutput
                 .criaOutput(transacao.formaDePagamento());
         final DescricaoOperacaoTransacaoOutput descricaoOperacaoTransacaoOutput = DescricaoOperacaoTransacaoOutput
