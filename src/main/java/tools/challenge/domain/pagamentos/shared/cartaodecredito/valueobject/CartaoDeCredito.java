@@ -21,4 +21,9 @@ public record CartaoDeCredito(String numero) implements ValueObject {
     private boolean numeroEInvalido() {
         return numero == null || numero.isBlank() || !numero.matches("\\d{16}");
     }
+
+    @Override
+    public String toString() {
+        return numero;
+    }
 }

@@ -12,4 +12,9 @@ public record FormaDePagamentoInput(String tipoFormaPagamento, int parcelas) {
     public FormaDePagamento toAggregate() {
         return FormaDePagamento.criaFormaDePagamento(TipoFormaDePagamento.fromString(tipoFormaPagamento), parcelas);
     }
+
+    public static FormaDePagamentoInput from(final FormaDePagamento formaDePagamento) {
+        return FormaDePagamentoInput.criaInput(
+                formaDePagamento.tipoFormaDePagamento().toString(), formaDePagamento.quantidadeParcelas());
+    }
 }
