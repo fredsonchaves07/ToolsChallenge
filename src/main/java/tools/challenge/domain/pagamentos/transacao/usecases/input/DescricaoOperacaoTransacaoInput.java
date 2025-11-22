@@ -17,7 +17,7 @@ public record DescricaoOperacaoTransacaoInput(BigDecimal valor, String estabelec
     public DescricaoOperacao toAggregate() {
         if (dataHora == null) return
                 DescricaoOperacao.criaDescricaoOperacao(estabelecimento, valor, null);
-        return DescricaoOperacao.criaDescricaoOperacao(estabelecimento, valor, LocalDateTime.parse(dataHora));
+        return DescricaoOperacao.criaDescricaoOperacaoComFormatoDataHoraString(estabelecimento, valor, dataHora);
     }
 
     public static DescricaoOperacaoTransacaoInput from(final DescricaoOperacaoTransacao descricaoOperacaoTransacao) {

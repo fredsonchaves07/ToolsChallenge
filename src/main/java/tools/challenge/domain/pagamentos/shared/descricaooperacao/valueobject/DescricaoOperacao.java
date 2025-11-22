@@ -17,6 +17,17 @@ public record DescricaoOperacao(String estabelecimento, BigDecimal valor,
         return new DescricaoOperacao(estabelecimento, valor, dataHora).validate();
     }
 
+    public static DescricaoOperacao criaDescricaoOperacaoComFormatoDataHoraString(final String estabelecimento,
+                                                      final BigDecimal valor,
+                                                      final String dataHora) {
+        try {
+            final LocalDateTime dataHoraLocalDate = LocalDateTime.parse(dataHora, DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+            return new DescricaoOperacao(estabelecimento, valor, dataHoraLocalDate).validate();
+        } catch (Exception exception) {
+            throw DescricaoOperacaoError.erro("Formato de data / hora inválido. Verifique se segue o formato: dd/MM/yyyy HH:mm:ss");
+        }
+    }
+
     @Override
     public DescricaoOperacao validate() {
         Validator.create(DescricaoOperacaoError::erro)
