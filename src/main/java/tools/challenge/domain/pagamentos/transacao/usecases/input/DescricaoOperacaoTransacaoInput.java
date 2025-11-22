@@ -5,13 +5,14 @@ import tools.challenge.domain.pagamentos.shared.descricaooperacao.valueobject.De
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public record DescricaoOperacaoTransacaoInput(BigDecimal valor, String estabelecimento, String dataHora) {
 
     public static DescricaoOperacaoTransacaoInput criaInput(
             final BigDecimal valor, final String estabelecimento, final LocalDateTime dataHora) {
         if (dataHora == null) return new DescricaoOperacaoTransacaoInput(valor, estabelecimento, null);
-        return new DescricaoOperacaoTransacaoInput(valor, estabelecimento, dataHora.toString());
+        return new DescricaoOperacaoTransacaoInput(valor, estabelecimento, dataHora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")).toString());
     }
 
     public DescricaoOperacao toAggregate() {
