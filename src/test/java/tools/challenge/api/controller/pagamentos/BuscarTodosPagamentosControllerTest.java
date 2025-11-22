@@ -1,7 +1,10 @@
 package tools.challenge.api.controller.pagamentos;
 
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.challenge.domain.pagamentos.transacao.repository.TransacaoRepository;
 import tools.challenge.domain.pagamentos.transacao.usecases.input.TransacaoInput;
 import tools.challenge.domain.pagamentos.transacao.usecases.output.ListTransacaoOutput;
 
@@ -14,6 +17,14 @@ import static tools.challenge.factories.ObjectFactoryTest.criaTransacaoDePagamen
 
 @QuarkusTest
 public class BuscarTodosPagamentosControllerTest {
+
+    @Inject
+    TransacaoRepository repository;
+
+    @BeforeEach
+    void tearDown() {
+        repository.deleteAll();
+    }
 
     @Test
     void deveSerPossivelBuscarPagamentos() {
