@@ -7,14 +7,26 @@ import tools.challenge.domain.pagamentos.shared.descricaooperacao.error.Descrica
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.time.format.DateTimeParseException;
 
 public record DescricaoOperacao(String estabelecimento, BigDecimal valor,
                                 LocalDateTime dataHora) implements ValueObject {
 
     public static DescricaoOperacao criaDescricaoOperacao(
             final String estabelecimento, final BigDecimal valor, final LocalDateTime dataHora) {
-        return new DescricaoOperacao(estabelecimento, valor, dataHora).validate();
+        if (dataHora == null) return new DescricaoOperacao(estabelecimento, valor, null).validate();
+        return new DescricaoOperacao(estabelecimento, valor, LocalDateTime.parse(dataHora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")), DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))).validate();
+    }
+
+    public static DescricaoOperacao criaDescricaoOperacaoComFormatoDataHoraString(final String estabelecimento,
+                                                      final BigDecimal valor,
+                                                      final String dataHora) {
+        try {
+            final LocalDateTime dataHoraLocalDate = LocalDateTime.parse(dataHora, DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+            return new DescricaoOperacao(estabelecimento, valor, dataHoraLocalDate).validate();
+        } catch (DateTimeParseException exception) {
+            throw DescricaoOperacaoError.erro("Formato de data / hora inválido. Verifique se segue o formato: dd/MM/yyyy HH:mm:ss");
+        }
     }
 
     @Override
@@ -43,7 +55,7 @@ public record DescricaoOperacao(String estabelecimento, BigDecimal valor,
     }
 
     public String dataHoraFormatada() {
-        return dataHora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm:ss", Locale.of("pt-BR")));
+        return dataHora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
     }
 
     @Override

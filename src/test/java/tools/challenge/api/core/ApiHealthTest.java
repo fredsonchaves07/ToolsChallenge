@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static tools.challenge.api.core.ApiHealth.HEALTH_VERSION_UNKNOWN;
+import static tools.challenge.api.core.health.ApiHealth.HEALTH_VERSION_UNKNOWN;
 
 @QuarkusTest
 public class ApiHealthTest {

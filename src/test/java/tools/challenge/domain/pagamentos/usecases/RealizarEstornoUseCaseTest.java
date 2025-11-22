@@ -37,8 +37,7 @@ public class RealizarEstornoUseCaseTest {
     void deveSerPossivelRealizarEstorno() {
         final String estabelecimento = "PetShop Mundo Cão";
         final LocalDateTime dataHora = LocalDateTime.now();
-        final String dataHoraFormatada = dataHora.format(DateTimeFormatter
-                .ofPattern("dd/MM/yyyy hh:mm:ss", Locale.of("pt-BR")));
+        final String dataHoraFormatada = dataHora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
         final BigDecimal valor = BigDecimal.valueOf(500.50);
         final String tipoFormaPagamento = "AVISTA";
         final String numeroCartao = criaCartaoDeCredito().numero();

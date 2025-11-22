@@ -1,4 +1,4 @@
-package tools.challenge.api.core;
+package tools.challenge.api.core.health;
 
 import java.time.LocalDate;
 
