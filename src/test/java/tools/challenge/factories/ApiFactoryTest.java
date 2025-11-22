@@ -22,12 +22,38 @@ public class ApiFactoryTest {
                 .as(TransacaoOutput.class);
     }
 
+    public static TransacaoOutput responseDeCriacaoDeEstorno(final TransacaoInput input) {
+        return given()
+                .contentType(ContentType.JSON)
+                .when()
+                .body(input)
+                .post("/estornos")
+                .then()
+                .statusCode(200)
+                .extract()
+                .response()
+                .as(TransacaoOutput.class);
+    }
+
     public static ApiError responseDeCriacaoDePagamentoComErro(final TransacaoInput input) {
         return given()
                 .contentType(ContentType.JSON)
                 .when()
                 .body(input)
                 .post("/pagamentos")
+                .then()
+                .statusCode(400)
+                .extract()
+                .response()
+                .as(ApiError.class);
+    }
+
+    public static ApiError responseDeCriacaoDeEstornoComErro(final TransacaoInput input) {
+        return given()
+                .contentType(ContentType.JSON)
+                .when()
+                .body(input)
+                .post("/estornos")
                 .then()
                 .statusCode(400)
                 .extract()

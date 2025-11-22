@@ -1,4 +1,4 @@
-package tools.challenge.api.controller;
+package tools.challenge.api.controller.pagamentos;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
