@@ -46,10 +46,8 @@ jobs:
       - name: Determine Docker Tag
         id: docker_tag
         run: |
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_name }}" == "main" ]]; then
-            latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            latest_tag=${{ steps.project_version.outputs.VERSION }}
             echo "TAG_NAME=$latest_tag" >> $GITHUB_OUTPUT
           else
             echo "TAG_NAME=latest" >> $GITHUB_OUTPUT
