@@ -23,11 +23,6 @@ Este repositório contém o código-fonte da **API RESTful de gerenciamento de p
 práticas de design e arquitetura de software. A API segue os princípios REST e foi construída com **TDD (Test-Driven
 Development)**, garantindo cobertura de testes desde a regra de negócio até os endpoints públicos.
 
-A API foi desenvolvida utilizando arquitetura em camadas e design orientado a DDD e padrão Either
-
-🔗 A aplicação também está disponível em ambiente cloud:
-> 🌐 https://tools-challenge-api-pagamentos.onrender.com/
-
 ## 📝 Análise e Documento de Requisitos
 
 Foi realizada uma **análise detalhada dos requisitos funcionais e não funcionais da API**.
@@ -98,12 +93,14 @@ As etapas incluem:
 - ✅ Redirecionamento automático para documentação Swagger
 - ✅ Implementação com **TDD**, com testes unitários em todas as camadas
 - ✅ CI/CD automatizado utilizando Actions do Github
-- ✅ Deploy contínuo com Docker + Render (Cloud)
 
 ## 🛠️ Instalação e configuração
 
 Para executar o projeto em ambiente de desenvolvimento, certifique-se de ter as ferramentas listadas na
 seção [tecnologias](#-tecnologias) instaladas.
+
+Verifique se a variavel de ambiente `DB_URL` no arquivo `.env` está com valor `database`
+Verifique o arquivo exemplo [.env-example](https://github.com/fredsonchaves07/ToolsChallenge/blob/main/.env-example).
 
 ### Executando com Docker
 
@@ -226,7 +223,7 @@ A API conta com documentação completa via Swagger/OpenAPI.
 
 Se encontrar algum bug ou comportamento inesperado:
 
-Abra uma [issue](https://github.com/fredsonchaves07/api-product-manager/issues)
+Abra uma [issue](https://github.com/fredsonchaves07/ToolsChallenge/issues)
 
 Ou envie uma PR com a sugestão de correção 🚀
 
