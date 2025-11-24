@@ -1,0 +1,405 @@
+name: CI Tools Challenge API
+
+on:
+  pull_request:
+    branches: [ "developer", "main" ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+      security-events: write
+
+    steps:
+      - name: Start job execution timer
+        id: job_timer_start
+        if: always()
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge target branch into PR branch
+        if: ${{ github.event_name == 'pull_request' }}
+        id: auto_merge
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout ${{ github.head_ref }}
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          
+          if git merge --no-ff origin/${{ github.event.pull_request.base.ref }} -m "Automatically merge branch base ${{ github.event.pull_request.base.ref }} into ${{ github.head_ref }} via CI"; then
+            git push origin ${{ github.head_ref }}
+            echo "MERGE_STATUS=success" >> $GITHUB_OUTPUT
+            echo "✅ Merge realizado com sucesso."
+          else
+            echo "MERGE_STATUS=conflict" >> $GITHUB_OUTPUT
+            echo "❌ Conflito detectado no merge!"
+            exit 1
+          fi
+
+      - name: Get Revision
+        id: git_commit
+        run: |
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Record build start
+        id: build_start
+        if: always()
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Build project
+        run: mvn -T 3C clean install -DskipTests -B
+
+      - name: Record build end
+        id: build_end
+        if: always()
+        run: echo "end_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Record test start
+        id: test_start
+        if: always()
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Clean old test reports
+        run: |
+          find . -type d -name "surefire-reports" -exec rm -rf {} + || true
+
+      - name: Run tests
+        run: mvn test -B
+
+      - name: Record test end
+        id: test_end
+        if: always()
+        run: echo "end_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Collect test summary
+        id: test_summary
+        if: always()
+        run: |
+          set -euo pipefail
+          run=0; failed=0; skipped=0
+
+          files_txt=$(find . -type f -path "*/target/surefire-reports/*.txt" 2>/dev/null || true)
+          if [ -n "$files_txt" ]; then
+            # iterate each file path (safe even if contains spaces)
+            while IFS= read -r f; do
+              line=$(grep -h "Tests run:" "$f" || true)
+              if [ -n "$line" ]; then
+                r=$(echo "$line" | sed -n 's/.*Tests run: *\([0-9]\+\).*/\1/p' || true)
+                ff=$(echo "$line" | sed -n 's/.*Failures: *\([0-9]\+\).*/\1/p' || true)
+                s=$(echo "$line" | sed -n 's/.*Skipped: *\([0-9]\+\).*/\1/p' || true)
+                r=${r:-0}; ff=${ff:-0}; s=${s:-0}
+                run=$((run + r))
+                failed=$((failed + ff))
+                skipped=$((skipped + s))
+              fi
+            done <<< "$files_txt"
+          else
+            files_xml=$(find . -type f -path "*/target/surefire-reports/*.xml" 2>/dev/null || true)
+            if [ -n "$files_xml" ]; then
+              run=$(awk -F'tests="' '/tests="/ { split($2,a,"\""); s+=a[1] } END{print s+0}' $files_xml || echo 0)
+              failed=$(awk -F'failures="' '/failures="/ { split($2,a,"\""); s+=a[1] } END{print s+0}' $files_xml || echo 0)
+              skipped=$(awk -F'skipped="' '/skipped="/ { split($2,a,"\""); s+=a[1] } END{print s+0}' $files_xml || echo 0)
+            fi
+          fi
+
+          echo "run=${run:-0}" >> $GITHUB_OUTPUT
+          echo "failed=${failed:-0}" >> $GITHUB_OUTPUT
+          echo "skipped=${skipped:-0}" >> $GITHUB_OUTPUT
+
+      - name: Collect failed tests
+        id: failed_tests
+        if: always()
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp)
+          files_txt=$(find . -type f -path "*/target/surefire-reports/*.txt" 2>/dev/null || true)
+          if [ -n "$files_txt" ]; then
+            for f in $files_txt; do
+              awk 'BEGIN{RS=""; FS="\n"} { for(i=1;i<=NF;i++){ if($i ~ /<<< FAILURE!/) { print $0 "\n---" } } }' "$f" >> "$tmp" 2>/dev/null || true
+            done
+          fi
+
+          if [ ! -s "$tmp" ]; then
+            files_xml=$(find . -type f -path "*/target/surefire-reports/*.xml" 2>/dev/null || true)
+            if [ -n "$files_xml" ]; then
+              for f in $files_xml; do
+                awk '
+                BEGIN { RS=">"; ORS=">\n"; }
+                /<testcase / {
+                  cls=""; name=""; msg="";
+                  if (match($0, /classname="([^"]+)"/, a)) cls=a[1];
+                  if (match($0, /name="([^"]+)"/, b)) name=b[1];
+                  record = $0;
+                  while ((getline) > 0) {
+                    record = record $0;
+                    if ($0 ~ /<\/testcase>/) break;
+                  }
+                  if (match(record, /<failure[^>]*>([^<]*)/, m)) {
+                    msg = m[1];
+                    gsub(/\r/,"",msg); gsub(/\n/," ",msg);
+                    gsub(/^[ \t]+|[ \t]+$/,"",msg);
+                    printf("%s#%s::%s\n---\n", cls, name, msg);
+                  }
+                }
+                ' "$f" >> "$tmp" || true
+              done
+            fi
+          fi
+
+          if [ -s "$tmp" ]; then
+            xml_lines=$(grep -E "#.+::" "$tmp" || true)
+            if [ -n "$xml_lines" ]; then
+              cleaned=$(echo "$xml_lines" | sed '/^\s*$/d' | sed 's/[^[:print:]\t]/ /g' | awk '{ if(length($0)>200) print substr($0,1,197) "..."; else print $0 }')
+              failed_list=$(echo "$cleaned" | cut -d'::' -f1 | tr '\n' ',' | sed 's/,$//')
+              failed_msgs=$(echo "$cleaned" | cut -d'::' -f2- | tr '\n' '|' | sed 's/|$//')
+              echo "failed_tests=${failed_list:-none}" >> $GITHUB_OUTPUT
+              echo "failed_tests_msgs=${failed_msgs:-}" >> $GITHUB_OUTPUT
+            else
+              paste -sd'\n' "$tmp" | awk -v RS="---" 'NF{ 
+                out=""; 
+                n=split($0,lines,"\n"); 
+                for(i=1;i<=n;i++){ if(lines[i] ~ /<<< FAILURE!/){ 
+                  # find next non-empty line after the <<< FAILURE! line
+                  for(j=i+1;j<=n;j++){ if(length(lines[j])>0){ out=out lines[i] " -- " lines[j]; break } } 
+                } } 
+                if(length(out)>0) print out
+              }' | sed '/^\s*$/d' | sed 's/^[ \t]*//;s/[ \t]*$//' > "$tmp".out || true
+
+              if [ -s "$tmp.out" ]; then
+                failed_list=$(cut -d' ' -f1 "$tmp.out" | tr '\n' ',' | sed 's/,$//')
+                failed_msgs=$(sed -n '1,200p' "$tmp.out" | tr '\n' '|' | sed 's/|$//')
+                echo "failed_tests=${failed_list:-none}" >> $GITHUB_OUTPUT
+                echo "failed_tests_msgs=${failed_msgs:-}" >> $GITHUB_OUTPUT
+              else
+                echo "failed_tests=none" >> $GITHUB_OUTPUT
+                echo "failed_tests_msgs=" >> $GITHUB_OUTPUT
+              fi
+            fi
+          else
+            echo "failed_tests=none" >> $GITHUB_OUTPUT
+            echo "failed_tests_msgs=" >> $GITHUB_OUTPUT
+          fi
+
+          rm -f "$tmp" "$tmp.out" 2>/dev/null || true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build for CI
+        id: build-ci
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: fredsonchaves07/tools-challenge-pagamentos-api:ci
+
+      - name: Up Containers
+        run: docker compose -f compose.ci.yml up -d --wait-timeout 10
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build for Vulnerability Analysis
+        id: build-vulnerability-analysis
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=maxa
+          tags: fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.git_commit.outputs.COMMIT }}
+
+      - name: Analyse for critical and high CVEs
+        id: docker-scoute-cves
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.git_commit.outputs.COMMIT }}
+          only-severities: critical,high
+          only-fixed: true
+          exit-code: true
+
+      - name: Analyse for all CVEs
+        id: docker-scoute-all-cves
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.git_commit.outputs.COMMIT }}
+
+      - name: Stop job execution timer
+        if: always()
+        id: job_timer
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.job_timer_start.outputs.start_time }}
+          duration=$(( end_time - start_time ))
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+
+      - name: Get current date
+        if: always()
+        id: gen_current_date
+        run: echo "summary_date=$(date '+%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Comment merge result on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: merge-result
+          message: |
+            ## 🔄 Merge Automático - GitHub Actions
+
+            **Resultado:** ${{ steps.auto_merge.outputs.MERGE_STATUS == 'success' && '✅ Merge realizado com sucesso!' || '❌ Conflito detectado no merge.' }}  
+            **Branch Base:** `${{ github.event.pull_request.base.ref }}`  
+            **Branch PR:** `${{ github.head_ref }}`  
+            **Executado por:** 🤖 *github-actions[bot]*  
+
+            _Generated automatically by CI pipeline on ${{ steps.gen_current_date.outputs.summary_date }}_
+
+      - name: Generate Job Summary
+        id: gen_summary
+        if: always()
+        run: |
+          set -euo pipefail
+
+          TEST_RUN="${{ steps.test_summary.outputs.run }}"
+          TEST_FAILED="${{ steps.test_summary.outputs.failed }}"
+          TEST_SKIPPED="${{ steps.test_summary.outputs.skipped }}"
+          FAILED_TESTS="${{ steps.failed_tests.outputs.failed_tests }}"
+          FAILED_MSGS="${{ steps.failed_tests.outputs.failed_tests_msgs }}"
+
+          # duration from job_timer output (string). fallback to 0 if empty
+          JOB_DURATION="${{ steps.job_timer.outputs.duration }}"
+          JOB_DURATION=${JOB_DURATION:-0}
+          MINUTES=$(( JOB_DURATION / 60 ))
+          SECONDS=$(( JOB_DURATION % 60 ))
+
+          # CVE outcome from step (may be empty)
+          CVE_OUTCOME="${{ steps.docker-scoute-cves.outcome }}"
+          CVE_OUTCOME=${CVE_OUTCOME:-unknown}
+
+          BUILD_OUTCOME="${{ steps.build_project.outcome }}"
+          BUILD_STATUS="✅ Success"
+          if [ "$BUILD_OUTCOME" = "failure" ]; then
+            BUILD_STATUS="❌ Failed"
+          fi
+
+          TEST_STATUS="✅ Passed (${TEST_RUN} tests)"
+          if [ -n "$TEST_FAILED" ] && [ "$TEST_FAILED" != "0" ]; then
+            TEST_STATUS="❌ Failed (${TEST_FAILED})"
+          fi
+
+          echo "## 🚦 CI/CD Summary - Tools Challenge" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | Tests | CVEs | Total Time |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ${BUILD_STATUS} | ${TEST_STATUS} | ${CVE_OUTCOME} | ${MINUTES}m ${SECONDS}s |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🧪 Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Run: **${TEST_RUN}**" >> $GITHUB_STEP_SUMMARY
+          echo "- Failed: **${TEST_FAILED}**" >> $GITHUB_STEP_SUMMARY
+          echo "- Skipped: **${TEST_SKIPPED}**" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$FAILED_TESTS" ] && [ "$FAILED_TESTS" != "none" ]; then
+            # try to pretty print CSV or pipe-separated messages
+            if echo "$FAILED_TESTS" | grep -q ','; then
+              IFS=',' read -ra arr <<< "$FAILED_TESTS"
+              IFS='|' read -ra msgs <<< "$FAILED_MSGS"
+              for i in "${!arr[@]}"; do
+                name=${arr[$i]}
+                msg=${msgs[$i]:-}
+                if [ -z "$msg" ]; then
+                  echo "- ${name}" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "- ${name}: ${msg}" >> $GITHUB_STEP_SUMMARY
+                fi
+              done
+            else
+              echo "$FAILED_TESTS" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "✅ Nenhum teste falhou." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🧰 Vulnerability Scan" >> $GITHUB_STEP_SUMMARY
+          if [ "$CVE_OUTCOME" = "success" ]; then
+            echo "✅ Nenhuma vulnerabilidade crítica/alta encontrada." >> $GITHUB_STEP_SUMMARY
+          elif [ "$CVE_OUTCOME" = "failure" ]; then
+            echo "⚠️ Vulnerabilidades críticas/altas detectadas — verifique os logs do Docker Scout." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ Vulnerability scan não executado ou resultado desconhecido." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🧩 Metadata" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Triggered by: **${{ github.actor }}**" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: **${{ github.head_ref || github.ref_name }}**" >> $GITHUB_STEP_SUMMARY
+          echo "- Workflow Run: [Ver Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+          SUMMARY_DATE=$(date '+%Y-%m-%d')
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Generated automatically on ${SUMMARY_DATE}_" >> $GITHUB_STEP_SUMMARY
+          echo "summary_date=${SUMMARY_DATE}" >> $GITHUB_OUTPUT
+
+      - name: Comment Summary on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: ci-summary
+          message: |
+            ## 🧱 CI Summary - Tools Challenge
+
+            **Result:** ${{ steps.test_summary.outputs.failed && steps.test_summary.outputs.failed != '0' && '❌ Failed' || '✅ Success' }}  
+            **Tests Executed:** ${{ steps.test_summary.outputs.run || '0' }}  
+            **Failed:** ${{ steps.test_summary.outputs.failed || '0' }}  
+            **Skipped:** ${{ steps.test_summary.outputs.skipped || '0' }}  
+            **Duration:** ~${{ steps.job_timer.outputs.duration || '0' }}s  
+            **Triggered by:** @${{ github.actor }}  
+
+            ### 🧪 Failed Tests
+            ${{ steps.failed_tests.outputs.failed_tests && steps.failed_tests.outputs.failed_tests != 'none' && format('- {0}', steps.failed_tests.outputs.failed_tests) || '✅ Nenhum teste falhou.' }}
+
+            ### 🧰 Vulnerability Scan
+            - Critical/High: ${{ steps.docker-scoute-cves.outcome == 'success' && '🟢 Clean' || (steps.docker-scoute-cves.outcome == 'failure' && '⚠️ Detected' || 'ℹ️ Unknown') }}
+            - Image: `fredsonchaves07/tools-challenge-pagamentos-api:${{ steps.git_commit.outputs.COMMIT || github.sha }}`
+
+            _Generated automatically by CI pipeline on ${{ steps.gen_summary.outputs.summary_date || env.CURRENT_DATE }}_

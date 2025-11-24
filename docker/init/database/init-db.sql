@@ -1,0 +1,5 @@
+CREATE DATABASE "CHALLENGEDB";
+
+\connect CHALLENGECI;
+
+\dn;
